@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Treino Solinca Pro</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
+        .ios-input { font-size: 16px; } /* Evita zoom no iPhone */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- DADOS DO TREINO (Baseados na Análise Biomecânica) ---
+        const workoutData = {
+            A: {
+                title: "Plano A: Glúteos & Posterior",
+                subtitle: "Foco na Cadeia Posterior e Abdução",
+                color: "text-rose-400",
+                exercises: [
+                    {
+                        id: "a1",
+                        name: "Cadeira Abdutora",
+                        sets: [20, 15, 15, 12],
+                        type: "standard",
+                        equipment: "Technogym Selection Abductor",
+                        tips: "Não empurre com os joelhos; rode o fémur para fora. Mantenha as costas coladas ao banco. Aumente a carga à medida que as reps baixam.",
+                        videoQuery: "seated hip abduction machine technique"
+                    },
+                    {
+                        id: "a2",
+                        name: "Agachamento Sumo",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Halter (Goblet) ou Barra",
+                        tips: "Pés afastados, pontas para fora (45º). O joelho segue a linha do pé. Tronco vertical. Carga considerável.",
+                        videoQuery: "dumbbell sumo squat technique"
+                    },
+                    {
+                        id: "a3",
+                        name: "Ponte de Glúteos",
+                        sets: [20, 20, 20, 20],
+                        type: "standard",
+                        equipment: "Barra, Halter ou Máquina Pelvic Lift",
+                        tips: "Queixo no peito, costelas para baixo. Aperte o glúteo no topo sem arquear a lombar.",
+                        videoQuery: "glute bridge barbell technique"
+                    },
+                    {
+                        id: "a4",
+                        name: "Leg Curl (Sentada)",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Technogym Leg Curl",
+                        tips: "Segure-se firme nas pegas para não levantar a bacia. Controle a subida em 3 segundos.",
+                        videoQuery: "seated leg curl technique"
+                    },
+                    {
+                        id: "a5",
+                        name: "Romanian Deadlift (Peso Morto)",
+                        sets: [20, 20],
+                        type: "standard",
+                        equipment: "Halteres ou Barra",
+                        tips: "Dobre apenas a anca (hip hinge), mantenha joelhos desbloqueados mas fixos. Desça até meio da canela com costas retas.",
+                        videoQuery: "romanian deadlift dumbbell form"
+                    },
+                    {
+                        id: "a6",
+                        name: "Elíptica / Vario",
+                        sets: ["20 min"],
+                        type: "cardio",
+                        equipment: "Technogym Vario/Elliptical",
+                        tips: "Nível 6-10. Mantenha o calcanhar apoiado para ativar mais o glúteo.",
+                        videoQuery: "technogym vario machine tutorial"
+                    }
+                ]
+            },
+            B: {
+                title: "Plano B: Costas & Ombros",
+                subtitle: "Definição do Tronco e Postura",
+                color: "text-blue-400",
+                exercises: [
+                    {
+                        id: "b1",
+                        name: "Lat Pull Down",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Lat Machine",
+                        tips: "Puxe os cotovelos em direção aos bolsos traseiros. Peito estufado para a barra.",
+                        videoQuery: "lat pulldown technique"
+                    },
+                    {
+                        id: "b2_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "b2a",
+                                name: "Low Row (Máquina)",
+                                sets: [15, 15, 15],
+                                equipment: "Technogym Low Row",
+                                tips: "Mantenha o peito apoiado. Esmague as omoplatas no final.",
+                                videoQuery: "technogym low row machine"
+                            },
+                            {
+                                id: "b2b",
+                                name: "Remada Unilateral (Serrote)",
+                                sets: [15, 15, 15],
+                                equipment: "Halter e Banco",
+                                tips: "Costas paralelas ao chão. Puxe o halter para a anca, não para o ombro.",
+                                videoQuery: "one arm dumbbell row form"
+                            }
+                        ]
+                    },
+                    {
+                        id: "b3",
+                        name: "Remada Baixa (Polia)",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Cable Row",
+                        tips: "Alongue bem à frente, contraia forte atrás. Não use balanço lombar.",
+                        videoQuery: "seated cable row technique"
+                    },
+                    {
+                        id: "b4",
+                        name: "Shoulder Press",
+                        sets: [12, 12, 12],
+                        type: "standard",
+                        equipment: "Shoulder Press Machine",
+                        tips: "Não deixe os cotovelos irem muito para trás. Empurre até quase esticar.",
+                        videoQuery: "shoulder press machine technogym"
+                    },
+                    {
+                        id: "b5_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "b5a",
+                                name: "Elevação Frontal",
+                                sets: [12, 12, 12],
+                                equipment: "Halteres/Disco",
+                                tips: "Suba até à altura dos olhos. Controle a descida.",
+                                videoQuery: "dumbbell front raise"
+                            },
+                            {
+                                id: "b5b",
+                                name: "Elevação Lateral",
+                                sets: [12, 12, 12],
+                                equipment: "Halteres",
+                                tips: "Levante pelos cotovelos. Braços ligeiramente fletidos.",
+                                videoQuery: "dumbbell lateral raise form"
+                            }
+                        ]
+                    },
+                    {
+                        id: "b6",
+                        name: "Passadeira (Inclinada)",
+                        sets: ["20 min"],
+                        type: "cardio",
+                        equipment: "Technogym Run",
+                        tips: "Inclinação 10%, Vel 5.0-5.5. Não se agarre!",
+                        videoQuery: "incline walking benefits"
+                    }
+                ]
+            },
+            C: {
+                title: "Plano C: Quadríceps",
+                subtitle: "Foco Anterior da Coxa",
+                color: "text-emerald-400",
+                exercises: [
+                    {
+                        id: "c1",
+                        name: "Agachamento (Squat)",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Barra, Smith ou Halter",
+                        tips: "Pés à largura dos ombros. Joelhos podem passar ligeiramente a ponta dos pés se o calcanhar não levantar.",
+                        videoQuery: "squat technique"
+                    },
+                    {
+                        id: "c2",
+                        name: "Leg Press",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Leg Press Horizontal/45",
+                        tips: "Pés mais em baixo na plataforma para focar no quadríceps. Não estique totalmente os joelhos.",
+                        videoQuery: "leg press for quads foot placement"
+                    },
+                    {
+                        id: "c3",
+                        name: "Lunges (Afundo)",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Halteres",
+                        tips: "Passo controlado. Tronco vertical foca na coxa da frente.",
+                        videoQuery: "dumbbell lunge form"
+                    },
+                    {
+                        id: "c4",
+                        name: "Leg Extension",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Cadeira Extensora",
+                        tips: "Segure 1 segundo no topo (perna esticada). Desça devagar.",
+                        videoQuery: "leg extension machine tips"
+                    },
+                    {
+                        id: "c5",
+                        name: "Cadeira Adutora",
+                        sets: [15, 15],
+                        type: "standard",
+                        equipment: "Technogym Adductor",
+                        tips: "Feche as pernas com controlo. Sinta a parte interna da coxa.",
+                        videoQuery: "hip adductor machine"
+                    },
+                    {
+                        id: "c6",
+                        name: "Elíptica",
+                        sets: ["20 min"],
+                        type: "cardio",
+                        equipment: "Cardio Area",
+                        tips: "Ritmo constante.",
+                        videoQuery: null
+                    }
+                ]
+            },
+            D: {
+                title: "Plano D: Glúteo, Peito & Braços",
+                subtitle: "Detalhe e Corpo Inteiro",
+                color: "text-purple-400",
+                exercises: [
+                    {
+                        id: "d1_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "d1a",
+                                name: "Abdução em Pé (Polia)",
+                                sets: [15, 15, 15],
+                                equipment: "Polia Baixa (Cabo)",
+                                tips: "Corpo direito. Afaste a perna lateralmente sem rodar a bacia.",
+                                videoQuery: "standing cable hip abduction"
+                            },
+                            {
+                                id: "d1b",
+                                name: "Lunge Cruzado (Curtsy)",
+                                sets: [15, 15, 15],
+                                equipment: "Peso do corpo ou Halter",
+                                tips: "Cruze a perna atrás. Sinta o alongamento no glúteo da frente.",
+                                videoQuery: "curtsy lunge form"
+                            }
+                        ]
+                    },
+                    {
+                        id: "d2_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "d2a",
+                                name: "Chest Press",
+                                sets: [15, 15, 15],
+                                equipment: "Máquina",
+                                tips: "Cotovelos a 45º. Empurre sem desencostar as omoplatas.",
+                                videoQuery: "chest press machine form"
+                            },
+                            {
+                                id: "d2b",
+                                name: "Flexões",
+                                sets: ["Falha", "Falha", "Falha"],
+                                equipment: "Chão ou Banco",
+                                tips: "Corpo em prancha. Se difícil, apoie as mãos num banco.",
+                                videoQuery: "push up form beginner"
+                            }
+                        ]
+                    },
+                    {
+                        id: "d3",
+                        name: "Supino Inclinado",
+                        sets: [15, 15, 15],
+                        type: "standard",
+                        equipment: "Halteres e Banco (30º)",
+                        tips: "Foco na parte superior do peito. Alongue bem em baixo.",
+                        videoQuery: "incline dumbbell press"
+                    },
+                    {
+                        id: "d4",
+                        name: "Peck Deck / Aberturas",
+                        sets: [15, 15, 12],
+                        type: "standard",
+                        equipment: "Máquina Voador",
+                        tips: "Cotovelos ligeiramente fletidos. Imagine abraçar uma árvore.",
+                        videoQuery: "pec deck machine form"
+                    },
+                    {
+                        id: "d5_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "d5a",
+                                name: "Fundos de Tríceps (Dips)",
+                                sets: [12, 12, 12],
+                                equipment: "Banco ou Máquina",
+                                tips: "Corpo vertical para focar no tríceps.",
+                                videoQuery: "bench dips for triceps"
+                            },
+                            {
+                                id: "d5b",
+                                name: "Tríceps Corda",
+                                sets: [12, 12, 12],
+                                equipment: "Polia Alta",
+                                tips: "Abra a corda no final do movimento para contrair.",
+                                videoQuery: "tricep rope pushdown"
+                            }
+                        ]
+                    },
+                    {
+                        id: "d6_super",
+                        type: "superset",
+                        exercises: [
+                            {
+                                id: "d6a",
+                                name: "Bicep Curl",
+                                sets: [12, 12, 12],
+                                equipment: "Halteres ou Máquina",
+                                tips: "Palmas para cima. Não balance o tronco.",
+                                videoQuery: "dumbbell bicep curl"
+                            },
+                            {
+                                id: "d6b",
+                                name: "Bicep Martelo",
+                                sets: [12, 12, 12],
+                                equipment: "Halteres",
+                                tips: "Palmas viradas uma para a outra.",
+                                videoQuery: "hammer curl form"
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // --- COMPONENTES UI (SVGs inline para evitar erros de biblioteca externa) ---
+        
+        const ICON_PATHS = {
+            "Check": <polyline points="20 6 9 17 4 12" />,
+            "Dumbbell": <g><path d="M6.5 6.5l11 11" /><path d="M21 21l-1-1" /><path d="M3 3l1 1" /><path d="M18 22l4-4" /><path d="M2 6l4-4" /><path d="M3 10l7-7" /><path d="M14 21l7-7" /></g>,
+            "Settings": <g><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></g>,
+            "Info": <g><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></g>,
+            "PlayCircle": <g><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" /></g>,
+            "Zap": <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />,
+            "ArrowLeft": <g><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></g>
+        };
+
+        const Icon = ({ name, size = 20, className }) => {
+            if (!ICON_PATHS[name]) return null;
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {ICON_PATHS[name]}
+                </svg>
+            );
+        };
+
+        const TimerOverlay = ({ initialSeconds, onClose }) => {
+            const [seconds, setSeconds] = useState(initialSeconds);
+
+            useEffect(() => {
+                if (seconds <= 0) return;
+                const timer = setInterval(() => setSeconds(s => s - 1), 1000);
+                return () => clearInterval(timer);
+            }, [seconds]);
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+                    <div className="flex flex-col items-center text-center animate-in zoom-in duration-200">
+                        <div className="text-sm text-gray-400 uppercase tracking-widest mb-4">Descanso</div>
+                        <div className="text-8xl font-bold font-mono text-white mb-8">
+                            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
+                        </div>
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => setSeconds(s => s + 30)}
+                                className="px-6 py-3 bg-gray-800 rounded-full text-white font-medium active:scale-95 transition"
+                            >
+                                +30s
+                            </button>
+                            <button 
+                                onClick={onClose}
+                                className="px-6 py-3 bg-orange-600 rounded-full text-white font-bold shadow-lg shadow-orange-600/30 active:scale-95 transition"
+                            >
+                                {seconds === 0 ? "Vamos!" : "Saltar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SetRow = ({ setNum, repsTarget, exerciseId, onComplete, initialWeight, isCompleted }) => {
+            const [weight, setWeight] = useState(initialWeight || "");
+            const [checked, setChecked] = useState(isCompleted || false);
+
+            const handleCheck = () => {
+                if (!checked) {
+                    onComplete(weight);
+                }
+                setChecked(!checked);
+            };
+
+            const handleWeightChange = (e) => {
+                setWeight(e.target.value);
+            };
+
+            return (
+                <div className={`flex items-center justify-between p-3 rounded-lg mb-2 transition-all ${checked ? 'bg-green-900/20 border border-green-800/30' : 'bg-slate-800/50 border border-slate-700'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${checked ? 'bg-green-600 text-white' : 'bg-slate-700 text-gray-400'}`}>
+                            {setNum}
+                        </div>
+                        <div className="text-sm">
+                            <span className="text-gray-400 block text-xs">Reps Alvo</span>
+                            <span className="font-mono text-white text-lg">{repsTarget}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[10px] text-gray-400 uppercase mr-1">Carga (kg)</span>
+                            <input 
+                                type="number" 
+                                value={weight}
+                                onChange={handleWeightChange}
+                                placeholder="0"
+                                className="w-16 bg-slate-900 border border-slate-600 rounded p-2 text-center text-white font-mono focus:border-orange-500 outline-none ios-input"
+                                disabled={checked}
+                            />
+                        </div>
+                        <button 
+                            onClick={handleCheck}
+                            className={`p-3 rounded-lg transition-all active:scale-95 ${checked ? 'bg-green-600 text-white shadow-lg shadow-green-900/50' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                        >
+                            <Icon name={checked ? "Check" : "Dumbbell"} size={20} />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ExerciseCard = ({ exercise, onSetComplete, history, completedSets, isSuperset = false }) => {
+            const [showDetails, setShowDetails] = useState(false);
+
+            // Helper to get historical weight
+            const getWeight = (idx) => history?.[exercise.id]?.[idx] || "";
+            const isSetDone = (idx) => completedSets?.[exercise.id]?.[idx] || false;
+
+            return (
+                <div className={`mb-6 ${isSuperset ? 'border-l-2 border-slate-600 pl-4 my-4' : 'glass-panel rounded-2xl p-5'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            {isSuperset && <span className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-1 block">Super-Série</span>}
+                            <h3 className="text-xl font-bold text-white leading-tight">{exercise.name}</h3>
+                            <p className="text-sm text-gray-400 mt-1 flex items-center gap-1">
+                                <Icon name="Settings" size={12} /> {exercise.equipment}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => setShowDetails(!showDetails)}
+                            className="p-2 bg-slate-800 rounded-full text-orange-400 hover:bg-slate-700"
+                        >
+                            <Icon name="Info" size={20} />
+                        </button>
+                    </div>
+
+                    {showDetails && (
+                        <div className="mb-4 bg-slate-800/80 rounded-xl p-4 text-sm animate-in slide-in-from-top-2">
+                            <p className="text-gray-300 mb-3 leading-relaxed">{exercise.tips}</p>
+                            {exercise.videoQuery && (
+                                <a 
+                                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.videoQuery)}`}
+                                    target="_blank"
+                                    className="inline-flex items-center gap-2 text-orange-400 font-bold hover:text-orange-300"
+                                >
+                                    <Icon name="PlayCircle" size={16} /> Ver Demonstração
+                                </a>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        {exercise.sets.map((reps, idx) => (
+                            <SetRow 
+                                key={idx} 
+                                setNum={idx + 1} 
+                                repsTarget={reps} 
+                                exerciseId={exercise.id}
+                                initialWeight={getWeight(idx)}
+                                isCompleted={isSetDone(idx)}
+                                onComplete={(weight) => onSetComplete(exercise.id, idx, weight)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activePlanId, setActivePlanId] = useState(null);
+            const [history, setHistory] = useState({});
+            const [sessionState, setSessionState] = useState({}); // Tracks completion within current session
+            const [timerSeconds, setTimerSeconds] = useState(null);
+
+            // Load history from local storage on mount
+            useEffect(() => {
+                const saved = localStorage.getItem('solincaWorkoutHistory');
+                if (saved) setHistory(JSON.parse(saved));
+            }, []);
+
+            // Save history
+            const saveHistory = (newHistory) => {
+                setHistory(newHistory);
+                localStorage.setItem('solincaWorkoutHistory', JSON.stringify(newHistory));
+            };
+
+            const handleSetComplete = (planId, exerciseId, setIdx, weight, isSupersetEnd = false) => {
+                // 1. Update Session State (Checkmark)
+                const newSession = { ...sessionState };
+                if (!newSession[exerciseId]) newSession[exerciseId] = {};
+                newSession[exerciseId][setIdx] = true;
+                setSessionState(newSession);
+
+                // 2. Save Weight to History
+                if (weight) {
+                    const newHistory = { ...history };
+                    if (!newHistory[exerciseId]) newHistory[exerciseId] = {};
+                    newHistory[exerciseId][setIdx] = weight;
+                    saveHistory(newHistory);
+                }
+
+                // 3. Trigger Timer
+                // Logic: If normal exercise -> Rest. If Superset -> Only rest if it's the 2nd exercise or specifically requested.
+                // In this simplified view, we trigger rest mostly, unless it's the first part of a superset.
+                if (isSupersetEnd) {
+                    setTimerSeconds(90); // Longer rest after superset
+                } else {
+                    setTimerSeconds(60); // Standard rest
+                }
+            };
+
+            if (!activePlanId) {
+                return (
+                    <div className="min-h-screen p-6 flex flex-col justify-center">
+                        <header className="mb-10">
+                            <h1 className="text-3xl font-bold text-white mb-2">Treino Solinca</h1>
+                            <p className="text-gray-400">Selecione o plano de hoje:</p>
+                        </header>
+                        <div className="grid gap-4">
+                            {Object.entries(workoutData).map(([key, plan]) => (
+                                <button 
+                                    key={key}
+                                    onClick={() => { setActivePlanId(key); setSessionState({}); }}
+                                    className="group relative overflow-hidden p-6 rounded-2xl bg-slate-800 border border-slate-700 text-left transition-all active:scale-95 hover:border-orange-500/50"
+                                >
+                                    <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${plan.color}`}>
+                                        <Icon name="Dumbbell" size={60} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h2 className={`text-2xl font-bold mb-1 ${plan.color}`}>{plan.title}</h2>
+                                        <p className="text-sm text-gray-400">{plan.subtitle}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            const plan = workoutData[activePlanId];
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Header */}
+                    <div className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center gap-4">
+                        <button 
+                            onClick={() => setActivePlanId(null)}
+                            className="p-2 rounded-full hover:bg-white/10 text-gray-300"
+                        >
+                            <Icon name="ArrowLeft" />
+                        </button>
+                        <div>
+                            <h1 className="font-bold text-white text-lg leading-none">{plan.title}</h1>
+                            <span className="text-xs text-orange-400 font-medium">Em progresso...</span>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 max-w-lg mx-auto">
+                        {plan.exercises.map((item, index) => {
+                            if (item.type === 'superset') {
+                                return (
+                                    <div key={`super-${index}`} className="glass-panel rounded-2xl p-4 mb-6 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+                                        <div className="flex items-center gap-2 mb-4 pl-2">
+                                            <Icon name="Zap" className="text-orange-500" size={18} />
+                                            <h3 className="font-bold text-gray-200 uppercase tracking-wider text-sm">Super-Série</h3>
+                                        </div>
+                                        {item.exercises.map((subEx, subIdx) => (
+                                            <ExerciseCard 
+                                                key={subEx.id}
+                                                exercise={subEx}
+                                                history={history}
+                                                completedSets={sessionState}
+                                                isSuperset={true}
+                                                onSetComplete={(id, setIdx, weight) => {
+                                                    // Only trigger timer if it's the last exercise in the superset
+                                                    const isLast = subIdx === item.exercises.length - 1;
+                                                    if (isLast) handleSetComplete(activePlanId, id, setIdx, weight, true);
+                                                    else handleSetComplete(activePlanId, id, setIdx, weight, false);
+                                                    
+                                                    // If it's NOT the last exercise, don't show timer, just mark done
+                                                    if (!isLast) setTimerSeconds(null);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                );
+                            } else {
+                                return (
+                                    <ExerciseCard 
+                                        key={item.id}
+                                        exercise={item}
+                                        history={history}
+                                        completedSets={sessionState}
+                                        onSetComplete={(id, setIdx, weight) => handleSetComplete(activePlanId, id, setIdx, weight, false)}
+                                    />
+                                );
+                            }
+                        })}
+                        
+                        <div className="mt-10 text-center">
+                            <button 
+                                onClick={() => {
+                                    if(confirm("Terminar treino e voltar ao menu?")) setActivePlanId(null);
+                                }}
+                                className="w-full py-4 rounded-xl bg-orange-600 text-white font-bold text-lg shadow-lg shadow-orange-900/20 active:scale-95 transition"
+                            >
+                                Terminar Treino
+                            </button>
+                            <p className="text-gray-500 text-xs mt-4">Solinca Pro Training Guide v1.0</p>
+                        </div>
+                    </div>
+
+                    {/* Timer Modal */}
+                    {timerSeconds !== null && (
+                        <TimerOverlay 
+                            initialSeconds={timerSeconds} 
+                            onClose={() => setTimerSeconds(null)} 
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
